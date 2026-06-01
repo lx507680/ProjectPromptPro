@@ -1,0 +1,131 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="{{CSP}}" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--vscode-font-family, sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-foreground, #e0e0e0);
+      background: var(--vscode-editor-background, #1e1e1e);
+      padding: 20px 24px;
+      line-height: 1.5;
+      max-width: 760px;
+    }
+    h2 { margin: 0 0 8px; font-size: 18px; }
+    h3 { font-size: 14px; margin: 20px 0 8px; color: #aaa; }
+    .subtitle { color: #888; font-size: 12px; margin-bottom: 16px; }
+    .status { padding: 10px; background: #2d2d2d; border: 1px solid #444; border-radius: 4px; font-size: 12px; margin-bottom: 16px; }
+    .status.ok { border-color: #3a8; color: #8d8; }
+    .status.err { border-color: #844; color: #f88; }
+    table { width: 100%; border-collapse: collapse; font-size: 12px; margin-bottom: 16px; }
+    th, td { border: 1px solid #444; padding: 8px; text-align: left; }
+    th { background: #2d2d2d; }
+    .tag { display: inline-block; padding: 1px 6px; border-radius: 3px; font-size: 10px; background: #444; margin-right: 4px; }
+    .tag.on { background: #0e639c; }
+    .tag.off { background: #666; }
+    textarea {
+      width: 100%; min-height: 160px; background: #252526; color: #ccc;
+      border: 1px solid #555; border-radius: 4px; padding: 10px; font-family: monospace; font-size: 12px;
+    }
+    .hint { font-size: 11px; color: #888; margin-top: 4px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
+    button { padding: 8px 14px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; background: #0e639c; color: #fff; }
+    button.secondary { background: #444; }
+    button:disabled { opacity: 0.5; }
+    code { background: #333; padding: 1px 4px; border-radius: 2px; font-size: 11px; }
+  </style>
+</head>
+<body>
+  <h2>外部 MCP Server 配置</h2>
+  <p class="subtitle">Agent 模式会合并<strong>内置工具</strong>与下方外部 MCP 工具。配置优先级：VS Code 设置 &gt; 工作区 <code>.vscode/mcp.json</code> &gt; 全局 <code>~/.cursor/mcp.json</code></p>
+
+  <div id="status" class="status">加载中…</div>
+
+  <h3>已发现的 MCP Server</h3>
+  <table>
+    <thead><tr><th>ID</th><th>传输</th><th>来源</th><th>状态</th><th></th></tr></thead>
+    <tbody id="serverTable"><tr><td colspan="5">—</td></tr></tbody>
+  </table>
+
+  <h3>VS Code 设置（projectPromptPro.mcp.servers）</h3>
+  <textarea id="settingsJson" spellcheck="false"></textarea>
+  <div class="hint">JSON 数组，每项含 id / name / enabled / transport(stdio|http) / command+args 或 url</div>
+  <div class="actions">
+    <button id="btnSave">保存到 VS Code 设置</button>
+    <button id="btnReload" class="secondary">刷新列表</button>
+    <button id="btnOpenMcp" class="secondary">打开/创建 .vscode/mcp.json</button>
+  </div>
+
+  <script nonce="{{NONCE}}">
+(function () {
+  var vscode = acquireVsCodeApi();
+  var statusEl = document.getElementById('status');
+  var tableEl = document.getElementById('serverTable');
+  var settingsEl = document.getElementById('settingsJson');
+
+  function setStatus(text, kind) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (kind === 'ok' ? ' ok' : kind === 'err' ? ' err' : '');
+  }
+
+  function renderServers(servers) {
+    if (!servers || !servers.length) {
+      tableEl.innerHTML = '<tr><td colspan="5" class="hint">未发现外部 MCP Server</td></tr>';
+      return;
+    }
+    tableEl.innerHTML = servers.map(function (s) {
+      var transport = s.transport + (s.command ? ' · ' + s.command : s.url ? ' · ' + s.url : '');
+      return '<tr>' +
+        '<td><strong>' + s.id + '</strong><br><span class="hint">' + (s.name || '') + '</span></td>' +
+        '<td>' + transport + '</td>' +
+        '<td><span class="tag">' + (s.source || 'settings') + '</span></td>' +
+        '<td><span class="tag ' + (s.enabled ? 'on' : 'off') + '">' + (s.enabled ? '启用' : '禁用') + '</span></td>' +
+        '<td><button class="secondary btn-test" data-id="' + s.id + '">测试</button></td>' +
+        '</tr>';
+    }).join('');
+    tableEl.querySelectorAll('.btn-test').forEach(function (btn) {
+      btn.addEventListener('click', function () {
+        btn.disabled = true;
+        setStatus('测试 ' + btn.dataset.id + '…');
+        vscode.postMessage({ type: 'testServer', serverId: btn.dataset.id });
+      });
+    });
+  }
+
+  document.getElementById('btnSave').onclick = function () {
+    try { JSON.parse(settingsEl.value); } catch (e) {
+      setStatus('JSON 格式错误: ' + e.message, 'err'); return;
+    }
+    setStatus('保存中…');
+    vscode.postMessage({ type: 'saveSettings', serversJson: settingsEl.value });
+  };
+  document.getElementById('btnReload').onclick = function () { vscode.postMessage({ type: 'reload' }); };
+  document.getElementById('btnOpenMcp').onclick = function () { vscode.postMessage({ type: 'openWorkspaceMcp' }); };
+
+  window.addEventListener('message', function (e) {
+    var msg = e.data;
+    tableEl.querySelectorAll('.btn-test').forEach(function (b) { b.disabled = false; });
+    if (msg.type === 'init') {
+      renderServers(msg.servers);
+      settingsEl.value = msg.settingsJson || '[]';
+      var paths = [];
+      if (msg.workspaceMcpPath) paths.push('工作区: ' + msg.workspaceMcpPath);
+      if (msg.globalMcpPath) paths.push('全局: ' + msg.globalMcpPath);
+      setStatus('就绪' + (paths.length ? ' · ' + paths.join(' · ') : ''));
+    } else if (msg.type === 'saved') {
+      setStatus(msg.message, 'ok');
+    } else if (msg.type === 'testResult') {
+      setStatus((msg.ok ? '✓ ' : '✗ ') + msg.serverId + ': ' + msg.message, msg.ok ? 'ok' : 'err');
+    } else if (msg.type === 'error') {
+      setStatus(msg.message, 'err');
+    }
+  });
+
+  vscode.postMessage({ type: 'ready' });
+})();
+  </script>
+</body>
+</html>

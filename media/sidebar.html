@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="{{CSP}}" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <style>
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      min-height: 100%;
+      margin: 0;
+      padding: 0;
+    }
+    body {
+      font-family: var(--vscode-font-family, -apple-system, BlinkMacSystemFont, sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-foreground, #e0e0e0);
+      background: var(--vscode-sideBar-background, #252526);
+      padding: 12px;
+      margin: 0;
+      line-height: 1.4;
+      overflow-y: auto;
+    }
+    h2 { font-size: 14px; font-weight: 600; margin: 0 0 12px; color: #e0e0e0; }
+    label { display: block; font-size: 11px; margin-bottom: 4px; color: #aaa; }
+    .field { margin-bottom: 12px; }
+    select, textarea {
+      width: 100%;
+      background: #3c3c3c;
+      color: #e0e0e0;
+      border: 1px solid #555;
+      border-radius: 4px;
+      padding: 6px 8px;
+      font-family: inherit;
+      font-size: inherit;
+    }
+    textarea { min-height: 72px; resize: vertical; }
+    #preview { min-height: 120px; font-size: 12px; line-height: 1.45; }
+    .status {
+      font-size: 11px; color: #aaa; padding: 8px;
+      background: #2d2d2d; border-radius: 4px; margin-bottom: 12px;
+      border: 1px solid #444;
+    }
+    .status.error { color: #f88; border-color: #844; }
+    .actions { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 12px; }
+    button {
+      flex: 1; min-width: 70px; padding: 8px 10px; border: none; border-radius: 4px;
+      cursor: pointer; font-size: 12px;
+      background: #0e639c; color: #fff;
+    }
+    button:hover { background: #1177bb; }
+    button.secondary { background: #444; color: #eee; }
+    button:disabled { opacity: 0.5; cursor: not-allowed; }
+    .hint { font-size: 10px; color: #888; margin-top: 4px; }
+    .token-bar { height: 6px; background: #333; border-radius: 3px; overflow: hidden; margin-top: 4px; }
+    .token-bar-fill { height: 100%; background: #0e639c; width: 0%; }
+    .token-bar.warn .token-bar-fill { background: #cca700; }
+    .token-bar.over .token-bar-fill { background: #f14c4c; }
+  </style>
+</head>
+<body>
+  <h2>生成项目 Prompt</h2>
+  <div id="status" class="status">正在连接扩展…</div>
+  <p class="hint" style="margin:0 0 12px">输入需求 → 自动匹配相关文件 → 生成后自动复制</p>
+
+  <div class="field">
+    <label for="template">Prompt 模板</label>
+    <select id="template"><option value="feature">加载中…</option></select>
+    <div id="templateDesc" class="hint"></div>
+  </div>
+
+  <div class="field">
+    <label for="generationMode">生成模式</label>
+    <select id="generationMode">
+      <option value="prompt-only">仅本地 Prompt（不调 API）</option>
+      <option value="assist">Assist — LLM 精炼 Prompt</option>
+      <option value="agent">Agent — MCP 多轮项目分析</option>
+    </select>
+    <div class="hint">Assist / Agent 需先在 AI Provider 设置中配置 API Key</div>
+  </div>
+
+  <div class="field">
+    <label for="model">模型风格</label>
+    <select id="model">
+      <option value="default">通用</option>
+      <option value="gpt">GPT（长上下文）</option>
+      <option value="claude">Claude Opus（代码强）</option>
+      <option value="deepseek">DeepSeek R1（结构化）</option>
+    </select>
+  </div>
+
+  <div class="field">
+    <label for="userInput">你的需求</label>
+    <textarea id="userInput" placeholder="新功能：描述要实现什么&#10;Bug 修复：粘贴报错信息 + 复现步骤&#10;例：TypeError: Cannot read property 'x' of undefined，点击登录按钮时复现"></textarea>
+  </div>
+
+  <div class="field">
+    <label>Token 预算</label>
+    <div id="tokenLabel" class="hint">— / —</div>
+    <div id="tokenBar" class="token-bar"><div id="tokenFill" class="token-bar-fill"></div></div>
+  </div>
+
+  <div class="actions">
+    <button id="btnGenerate">生成项目 Prompt</button>
+    <button id="btnRescan" class="secondary">重新扫描</button>
+    <button id="btnCopy" class="secondary" disabled>复制</button>
+    <button id="btnInject" class="secondary" disabled>发送 Cursor</button>
+    <button id="btnAgentReport" class="secondary" disabled>Agent 报告</button>
+  </div>
+
+  <div class="field">
+    <label for="preview">预览</label>
+    <textarea id="preview" readonly placeholder="生成后显示…"></textarea>
+  </div>
+
+  <script nonce="{{NONCE}}">
+(function () {
+  var vscode;
+  try { vscode = acquireVsCodeApi(); } catch (e) {
+    document.getElementById('status').textContent = 'Webview API 不可用，请重载窗口';
+    return;
+  }
+  var state = { templates: [], scan: null, prompt: '' };
+  var $ = function (id) { return document.getElementById(id); };
+  var statusEl = $('status'), templateEl = $('template'), templateDescEl = $('templateDesc');
+  var modelEl = $('model'), modeEl = $('generationMode'), userInputEl = $('userInput'), previewEl = $('preview');
+  var btnGenerate = $('btnGenerate'), btnRescan = $('btnRescan'), btnCopy = $('btnCopy'), btnInject = $('btnInject'), btnAgentReport = $('btnAgentReport');
+  var tokenLabel = $('tokenLabel'), tokenBar = $('tokenBar'), tokenFill = $('tokenFill');
+
+  function setStatus(text, isError) {
+    statusEl.textContent = text;
+    statusEl.className = 'status' + (isError ? ' error' : '');
+  }
+  function renderTemplates() {
+    templateEl.innerHTML = '';
+    state.templates.forEach(function (t) {
+      var opt = document.createElement('option');
+      opt.value = t.id;
+      opt.textContent = t.icon + ' ' + t.name + (t.source === 'workspace' ? ' (工作区)' : '');
+      templateEl.appendChild(opt);
+    });
+    updateTemplateDesc();
+  }
+  function updateTemplateDesc() {
+    var t = state.templates.find(function (x) { return x.id === templateEl.value; });
+    templateDescEl.textContent = t ? t.description : '';
+  }
+  function debounce(fn, ms) {
+    var t;
+    return function () { clearTimeout(t); t = setTimeout(fn, ms); };
+  }
+  function updateTokenBar(used, max) {
+    if (!used || !max) { tokenLabel.textContent = '— / —'; tokenFill.style.width = '0%'; return; }
+    var pct = Math.min(100, Math.round((used / max) * 100));
+    tokenLabel.textContent = '约 ' + used + ' / ' + max + ' tokens';
+    tokenFill.style.width = pct + '%';
+    tokenBar.className = 'token-bar' + (pct >= 95 ? ' over' : pct >= 80 ? ' warn' : '');
+  }
+
+  function payloadBase() {
+    return {
+      templateId: templateEl.value,
+      userInput: userInputEl.value,
+      modelStyle: modelEl.value,
+      generationMode: modeEl.value,
+    };
+  }
+
+  templateEl.addEventListener('change', function () {
+    updateTemplateDesc();
+    vscode.postMessage(Object.assign({ type: 'preview' }, payloadBase()));
+  });
+  modelEl.addEventListener('change', function () {
+    vscode.postMessage(Object.assign({ type: 'preview' }, payloadBase()));
+  });
+  modeEl.addEventListener('change', function () {
+    setStatus(modeEl.value === 'prompt-only' ? '就绪' : '已选 ' + modeEl.options[modeEl.selectedIndex].text);
+  });
+  userInputEl.addEventListener('input', debounce(function () {
+    if (state.scan) vscode.postMessage(Object.assign({ type: 'preview' }, payloadBase()));
+  }, 400));
+  btnGenerate.addEventListener('click', function () {
+    btnGenerate.disabled = true;
+    setStatus('正在生成…');
+    vscode.postMessage(Object.assign({ type: 'generate' }, payloadBase()));
+  });
+  btnRescan.addEventListener('click', function () {
+    btnRescan.disabled = true;
+    setStatus('正在扫描…');
+    vscode.postMessage({ type: 'rescan' });
+  });
+  btnCopy.addEventListener('click', function () { vscode.postMessage({ type: 'copy' }); });
+  btnInject.addEventListener('click', function () { vscode.postMessage({ type: 'inject' }); });
+  btnAgentReport.addEventListener('click', function () { vscode.postMessage({ type: 'openAgentReport' }); });
+
+  window.addEventListener('message', function (e) {
+    var msg = e.data;
+    if (msg.type === 'init') {
+      state.templates = msg.templates || [];
+      renderTemplates();
+      if (msg.defaultTemplateId) templateEl.value = msg.defaultTemplateId;
+      if (msg.defaultModelStyle) modelEl.value = msg.defaultModelStyle;
+      if (msg.defaultGenerationMode) modeEl.value = msg.defaultGenerationMode;
+      setStatus(msg.statusText || '就绪');
+      btnGenerate.disabled = false;
+      btnRescan.disabled = false;
+    } else if (msg.type === 'scanResult') {
+      state.scan = msg.scan;
+      btnRescan.disabled = false;
+      if (msg.scan && msg.scan.estimatedContextTokens) updateTokenBar(msg.scan.estimatedContextTokens, msg.maxTokens || 50000);
+      setStatus(msg.statusText || '扫描完成');
+      if (msg.autoPreview) vscode.postMessage(Object.assign({ type: 'preview' }, payloadBase()));
+    } else if (msg.type === 'progress') {
+      setStatus(msg.message || '处理中…');
+    } else if (msg.type === 'promptReady') {
+      state.prompt = msg.text || '';
+      previewEl.value = state.prompt;
+      btnCopy.disabled = !state.prompt;
+      btnInject.disabled = !state.prompt;
+      btnAgentReport.disabled = !msg.hasAgentReport;
+      btnGenerate.disabled = false;
+      if (msg.resolvedTemplateId && templateEl.value === 'auto') {
+        templateDescEl.textContent = '已自动选用：' + msg.resolvedTemplateId;
+      }
+      updateTokenBar(msg.estimatedTokens, msg.maxTokens);
+      setStatus(msg.statusText || (msg.autoCopied ? '已生成并复制' : '已生成'));
+    } else if (msg.type === 'error') {
+      btnGenerate.disabled = false;
+      btnRescan.disabled = false;
+      setStatus(msg.message || '失败', true);
+    } else if (msg.type === 'copied') {
+      setStatus('已复制到剪贴板');
+    }
+  });
+
+  vscode.postMessage({ type: 'ready' });
+})();
+  </script>
+</body>
+</html>

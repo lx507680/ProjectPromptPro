@@ -1,0 +1,394 @@
+{
+  "name": "project-prompt-pro",
+  "displayName": "Project Prompt Pro",
+  "description": "打开项目 → 输入需求 → 自动生成带代码上下文的 Prompt，复制到 Cursor 直接用",
+  "version": "1.2.5",
+  "publisher": "project-prompt-pro",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/lx507680/ProjectPromptPro.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lx507680/ProjectPromptPro/issues"
+  },
+  "homepage": "https://github.com/lx507680/ProjectPromptPro#readme",
+  "keywords": [
+    "cursor",
+    "prompt",
+    "ai",
+    "copilot",
+    "context",
+    "vue",
+    "react",
+    "spring boot",
+    "code generation"
+  ],
+  "engines": {
+    "vscode": "^1.85.0",
+    "node": ">=18"
+  },
+  "categories": [
+    "Other",
+    "Machine Learning"
+  ],
+  "galleryBanner": {
+    "color": "#1e1e2e",
+    "theme": "dark"
+  },
+  "activationEvents": [
+    "onStartupFinished",
+    "onView:project-prompt-pro.sidebar",
+    "onCommand:project-prompt-pro.generateProjectPrompt",
+    "onCommand:project-prompt-pro.generate",
+    "onCommand:project-prompt-pro.openSidebar",
+    "onCommand:project-prompt-pro.openPromptWindow",
+    "onCommand:project-prompt-pro.openWizard",
+    "onCommand:project-prompt-pro.rescan",
+    "onCommand:project-prompt-pro.showContext",
+    "onCommand:project-prompt-pro.copyPrompt",
+    "onCommand:project-prompt-pro.injectCursor",
+    "onCommand:project-prompt-pro.clearCache",
+    "onCommand:project-prompt-pro.openTemplateFolder",
+    "onCommand:project-prompt-pro.openPromptWebview",
+    "onCommand:project-prompt-pro.openAiSettings",
+    "onCommand:project-prompt-pro.openMcpSettings",
+    "onCommand:project-prompt-pro.openAgentReport",
+    "onCommand:project-prompt-pro.reloadWebview"
+  ],
+  "main": "./dist/extension.js",
+  "capabilities": {
+    "virtualWorkspaces": true,
+    "untrustedWorkspaces": {
+      "supported": true
+    }
+  },
+  "contributes": {
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "project-prompt-pro",
+          "title": "Project Prompt Pro",
+          "icon": "resources/icon.svg"
+        }
+      ]
+    },
+    "views": {
+      "project-prompt-pro": [
+        {
+          "id": "project-prompt-pro.sidebar",
+          "name": "生成 Prompt",
+          "type": "webview"
+        }
+      ]
+    },
+    "commands": [
+      {
+        "command": "project-prompt-pro.generateProjectPrompt",
+        "title": "生成项目 Prompt",
+        "category": "Project Prompt Pro",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "project-prompt-pro.rescan",
+        "title": "重新扫描项目",
+        "category": "Project Prompt Pro",
+        "icon": "$(refresh)"
+      },
+      {
+        "command": "project-prompt-pro.showContext",
+        "title": "Show Project Context",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.generate",
+        "title": "生成项目 Prompt（快捷）",
+        "category": "Project Prompt Pro",
+        "icon": "$(sparkle)"
+      },
+      {
+        "command": "project-prompt-pro.openSidebar",
+        "title": "打开 Prompt 侧边栏",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.openPromptWindow",
+        "title": "高级向导（分步选择）",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.showHistory",
+        "title": "查看 Prompt 历史",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.openTeamTemplates",
+        "title": "编辑团队模板 JSON",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.openPromptWebview",
+        "title": "Open Webview Panel (Experimental)",
+        "category": "Project Prompt Pro",
+        "icon": "$(window)"
+      },
+      {
+        "command": "project-prompt-pro.openWizard",
+        "title": "Prompt Wizard",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.reloadWebview",
+        "title": "Reload Window (Fix Webview)",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.copyPrompt",
+        "title": "Copy Last Prompt",
+        "category": "Project Prompt Pro",
+        "icon": "$(clippy)"
+      },
+      {
+        "command": "project-prompt-pro.injectCursor",
+        "title": "Send to Cursor Chat",
+        "category": "Project Prompt Pro",
+        "icon": "$(send)"
+      },
+      {
+        "command": "project-prompt-pro.clearCache",
+        "title": "Clear Scan Cache",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.openTemplateFolder",
+        "title": "Open Workspace Templates",
+        "category": "Project Prompt Pro"
+      },
+      {
+        "command": "project-prompt-pro.openAiSettings",
+        "title": "AI Provider 设置",
+        "category": "Project Prompt Pro",
+        "icon": "$(settings-gear)"
+      },
+      {
+        "command": "project-prompt-pro.openMcpSettings",
+        "title": "MCP Server 设置",
+        "category": "Project Prompt Pro",
+        "icon": "$(server-process)"
+      },
+      {
+        "command": "project-prompt-pro.openAgentReport",
+        "title": "查看 Agent 分析报告",
+        "category": "Project Prompt Pro",
+        "icon": "$(book)"
+      }
+    ],
+    "menus": {
+      "view/title": [
+        {
+          "command": "project-prompt-pro.generateProjectPrompt",
+          "when": "view == project-prompt-pro.sidebar",
+          "group": "navigation@1"
+        },
+        {
+          "command": "project-prompt-pro.rescan",
+          "when": "view == project-prompt-pro.sidebar",
+          "group": "navigation"
+        },
+        {
+          "command": "project-prompt-pro.openAiSettings",
+          "when": "view == project-prompt-pro.sidebar",
+          "group": "navigation"
+        },
+        {
+          "command": "project-prompt-pro.openMcpSettings",
+          "when": "view == project-prompt-pro.sidebar",
+          "group": "navigation"
+        }
+      ]
+    },
+    "configuration": {
+      "title": "Project Prompt Pro",
+      "properties": {
+        "projectPromptPro.excludePatterns": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "default": [],
+          "description": "额外排除的 glob 模式（在默认排除之外）"
+        },
+        "projectPromptPro.maxScanFiles": {
+          "type": "number",
+          "default": 2000,
+          "minimum": 100,
+          "description": "单次扫描的最大文件数"
+        },
+        "projectPromptPro.treeMaxDepth": {
+          "type": "number",
+          "default": 4,
+          "minimum": 1,
+          "maximum": 10,
+          "description": "目录结构树的最大深度"
+        },
+        "projectPromptPro.verbose": {
+          "type": "boolean",
+          "default": false,
+          "description": "在输出通道打印详细扫描日志"
+        },
+        "projectPromptPro.defaultTemplate": {
+          "type": "string",
+          "default": "feature",
+          "enum": [
+            "feature",
+            "bugfix",
+            "refactor",
+            "docs",
+            "test"
+          ],
+          "description": "默认 Prompt 模板"
+        },
+        "projectPromptPro.defaultModelStyle": {
+          "type": "string",
+          "default": "default",
+          "enum": [
+            "default",
+            "gpt",
+            "claude",
+            "deepseek"
+          ],
+          "description": "默认模型风格（仅影响 Prompt 措辞）"
+        },
+        "projectPromptPro.maxTokens": {
+          "type": "number",
+          "default": 50000,
+          "minimum": 1000,
+          "maximum": 128000,
+          "description": "生成 Prompt 的最大 Token 预算（启发式估算，默认预留 14K 给 AI 输出）"
+        },
+        "projectPromptPro.enableCache": {
+          "type": "boolean",
+          "default": true,
+          "description": "启用工作区扫描缓存（基于文件指纹 + Git HEAD）"
+        },
+        "projectPromptPro.sanitizeSecrets": {
+          "type": "boolean",
+          "default": true,
+          "description": "跳过敏感文件并脱敏密钥模式"
+        },
+        "projectPromptPro.autoSelectTemplate": {
+          "type": "boolean",
+          "default": true,
+          "description": "根据需求关键词自动选择 Prompt 模板（feature / bugfix 等）"
+        },
+        "projectPromptPro.autoCopyOnGenerate": {
+          "type": "boolean",
+          "default": true,
+          "description": "生成 Prompt 后自动复制到剪贴板"
+        },
+        "projectPromptPro.ai.provider": {
+          "type": "string",
+          "default": "none",
+          "enum": ["none", "deepseek", "openai", "anthropic", "custom"],
+          "enumDescriptions": [
+            "不调用 AI API，仅本地生成 Prompt",
+            "DeepSeek（OpenAI 兼容）",
+            "OpenAI",
+            "Anthropic（需 OpenAI 兼容网关）",
+            "自定义 OpenAI 兼容端点"
+          ],
+          "description": "AI Provider（为 Agent 功能预留）"
+        },
+        "projectPromptPro.ai.baseUrl": {
+          "type": "string",
+          "default": "",
+          "description": "AI API Base URL（留空使用 Provider 默认值）"
+        },
+        "projectPromptPro.ai.model": {
+          "type": "string",
+          "default": "",
+          "description": "AI 模型名称（留空使用 Provider 默认值）"
+        },
+        "projectPromptPro.generationMode": {
+          "type": "string",
+          "default": "prompt-only",
+          "enum": ["prompt-only", "assist", "agent"],
+          "enumDescriptions": [
+            "仅本地扫描 + 模板生成 Prompt",
+            "生成后调用 LLM 精炼 Prompt",
+            "MCP 工具多轮分析，输出改造方案 + 推荐 Prompt"
+          ],
+          "description": "默认生成模式"
+        },
+        "projectPromptPro.assist.minTokensToRefine": {
+          "type": "number",
+          "default": 2500,
+          "minimum": 500,
+          "description": "Assist 模式：原始 Prompt 超过此 token 估算值才调用 LLM 精炼"
+        },
+        "projectPromptPro.assist.maxOutputTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 512,
+          "description": "Assist 模式：LLM 输出最大 token"
+        },
+        "projectPromptPro.agent.maxSteps": {
+          "type": "number",
+          "default": 8,
+          "minimum": 2,
+          "maximum": 20,
+          "description": "Agent 模式：最大分析轮数（含工具调用）"
+        },
+        "projectPromptPro.agent.maxOutputTokens": {
+          "type": "number",
+          "default": 4096,
+          "minimum": 512,
+          "description": "Agent 模式：每轮 LLM 输出最大 token"
+        },
+        "projectPromptPro.agent.openReportPanel": {
+          "type": "boolean",
+          "default": true,
+          "description": "Agent 模式完成后自动在侧边打开 Markdown 分析报告面板"
+        },
+        "projectPromptPro.mcp.servers": {
+          "type": "array",
+          "default": [],
+          "description": "外部 MCP Server 配置（JSON 数组，与 .vscode/mcp.json 合并）",
+          "items": {
+            "type": "object",
+            "properties": {
+              "id": { "type": "string" },
+              "name": { "type": "string" },
+              "enabled": { "type": "boolean" },
+              "transport": { "type": "string", "enum": ["stdio", "http"] },
+              "command": { "type": "string" },
+              "args": { "type": "array", "items": { "type": "string" } },
+              "url": { "type": "string" }
+            }
+          }
+        }
+      }
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "node esbuild.js",
+    "watch": "node esbuild.js --watch",
+    "lint": "tsc --noEmit",
+    "test": "tsc -p tsconfig.test.json && node test-out/test/runner.js",
+    "test:smoke": "tsc -p tsconfig.test.json && node test-out/test/smoke-e2e.js",
+    "package": "vsce package --no-dependencies",
+    "verify": "node scripts/verify-release.mjs",
+    "publish:marketplace": "vsce publish --no-dependencies"
+  },
+  "devDependencies": {
+    "@types/node": "^20.11.0",
+    "@types/vscode": "^1.85.0",
+    "@vscode/vsce": "^2.24.0",
+    "esbuild": "^0.20.0",
+    "typescript": "^5.3.0"
+  },
+  "dependencies": {
+    "fast-glob": "^3.3.3"
+  }
+}

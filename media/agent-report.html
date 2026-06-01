@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8" />
+  <meta http-equiv="Content-Security-Policy" content="{{CSP}}" />
+  <style>
+    * { box-sizing: border-box; }
+    body {
+      font-family: var(--vscode-font-family, sans-serif);
+      font-size: var(--vscode-font-size, 13px);
+      color: var(--vscode-foreground, #ccc);
+      background: var(--vscode-editor-background, #1e1e1e);
+      padding: 20px 28px;
+      line-height: 1.55;
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 { font-size: 20px; margin: 0 0 8px; }
+    h2 { font-size: 15px; margin: 20px 0 8px; color: #7dd3fc; border-bottom: 1px solid #333; padding-bottom: 4px; }
+    .meta { color: #888; font-size: 12px; margin-bottom: 20px; }
+    .requirement { background: #2a2a2a; border-left: 3px solid #0e639c; padding: 10px 12px; margin-bottom: 20px; border-radius: 0 4px 4px 0; }
+    .report { margin-bottom: 24px; }
+    .report p { margin: 8px 0; }
+    .report li { margin: 4px 0 4px 20px; }
+    pre {
+      background: #252526;
+      border: 1px solid #444;
+      border-radius: 4px;
+      padding: 12px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    .prompt-box {
+      background: #252526;
+      border: 1px solid #0e639c;
+      border-radius: 4px;
+      padding: 12px;
+      white-space: pre-wrap;
+      font-size: 12px;
+      max-height: 280px;
+      overflow-y: auto;
+    }
+    .actions { display: flex; flex-wrap: wrap; gap: 8px; margin: 16px 0 24px; }
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      background: #0e639c;
+      color: #fff;
+    }
+    button.secondary { background: #444; }
+    .muted { color: #888; }
+    ul.tools { padding-left: 0; list-style: none; }
+    ul.tools li { padding: 4px 0; border-bottom: 1px solid #333; font-size: 12px; }
+    code { background: #333; padding: 1px 4px; border-radius: 2px; }
+  </style>
+</head>
+<body>
+  <h1>Agent 分析报告</h1>
+  <div class="meta">{{META}}</div>
+  <div class="requirement"><strong>需求：</strong>{{USER_INPUT}}</div>
+
+  <div class="actions">
+    <button id="btnCopyReport">复制完整报告</button>
+    <button id="btnCopyPrompt">复制推荐 Prompt</button>
+    <button id="btnOpenMd" class="secondary">在编辑器打开 Markdown</button>
+  </div>
+
+  <h2>分析报告</h2>
+  <div class="report">{{REPORT_HTML}}</div>
+
+  <h2>推荐 Prompt</h2>
+  <div class="prompt-box">{{PROMPT_ESCAPED}}</div>
+
+  <h2>工具调用</h2>
+  <ul class="tools">{{TOOL_CALLS}}</ul>
+
+  <script nonce="{{NONCE}}">
+(function () {
+  var vscode = acquireVsCodeApi();
+  document.getElementById('btnCopyReport').onclick = function () { vscode.postMessage({ type: 'copyReport' }); };
+  document.getElementById('btnCopyPrompt').onclick = function () { vscode.postMessage({ type: 'copyPrompt' }); };
+  document.getElementById('btnOpenMd').onclick = function () { vscode.postMessage({ type: 'openMarkdown' }); };
+})();
+  </script>
+</body>
+</html>

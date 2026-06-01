@@ -1,0 +1,59 @@
+{
+  "frameworks": [
+    {
+      "id": "vue",
+      "label": "Vue",
+      "deps": ["vue"],
+      "versionFrom": "vue"
+    },
+    {
+      "id": "react",
+      "label": "React",
+      "deps": ["react", "react-dom"],
+      "versionFrom": "react"
+    },
+    {
+      "id": "next",
+      "label": "Next.js",
+      "deps": ["next"],
+      "versionFrom": "next"
+    },
+    {
+      "id": "angular",
+      "label": "Angular",
+      "deps": ["@angular/core"],
+      "versionFrom": "@angular/core"
+    },
+    {
+      "id": "svelte",
+      "label": "Svelte",
+      "deps": ["svelte"],
+      "versionFrom": "svelte"
+    }
+  ],
+  "ui": [
+    { "id": "element-plus", "label": "Element Plus", "deps": ["element-plus"] },
+    { "id": "antd", "label": "Ant Design", "deps": ["antd"] },
+    { "id": "mui", "label": "MUI", "deps": ["@mui/material"] },
+    { "id": "tailwind", "label": "Tailwind CSS", "deps": ["tailwindcss"] }
+  ],
+  "state": [
+    { "id": "pinia", "label": "Pinia", "deps": ["pinia"] },
+    { "id": "redux", "label": "Redux", "deps": ["redux", "@reduxjs/toolkit"] },
+    { "id": "zustand", "label": "Zustand", "deps": ["zustand"] },
+    { "id": "mobx", "label": "MobX", "deps": ["mobx"] }
+  ],
+  "build": [
+    { "id": "vite", "label": "Vite", "deps": ["vite"] },
+    { "id": "webpack", "label": "Webpack", "deps": ["webpack"] },
+    { "id": "rollup", "label": "Rollup", "deps": ["rollup"] }
+  ],
+  "backend": [
+    {
+      "id": "spring-boot",
+      "label": "Spring Boot",
+      "files": ["pom.xml", "build.gradle", "build.gradle.kts"],
+      "markers": ["spring-boot-starter"]
+    }
+  ]
+}
